@@ -30,7 +30,7 @@ class ExtractorResponseEditor(
   }
 
   override fun caption(): String {
-    return "Extract"
+    return "Clear"
   }
 
   override fun uiComponent(): Component {

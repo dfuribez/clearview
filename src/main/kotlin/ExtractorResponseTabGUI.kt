@@ -10,6 +10,10 @@ import org.fife.ui.rtextarea.RTextScrollPane
 import org.fife.ui.rtextarea.SearchContext
 import org.fife.ui.rtextarea.SearchEngine
 import org.jsoup.Jsoup
+import org.jsoup.select.Elements
+import java.awt.Color
+import java.awt.event.FocusEvent
+import java.awt.event.FocusListener
 import java.io.IOException
 import javax.swing.*
 
@@ -23,10 +27,10 @@ class ExtractorResponseTabGUI(
   private val searchTextField = JTextField()
 
   private val removeTagsCheckBox = JCheckBox("Remove Tags")
-  private val removeJSCheckBox = JCheckBox("Remove Scrips")
+  private val removeHeadCheckBox = JCheckBox("Remove Head")
   private val convertJSONCheckBox = JCheckBox("Convert to JSON")
 
-  private val enterButton = JButton("->")
+  private val enterButton = JButton("Search")
   private val previousButton = JButton("<")
   private val nextButton = JButton(">")
 
@@ -52,6 +56,13 @@ class ExtractorResponseTabGUI(
     }
 
     colourText.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML)
+
+    searchTextField.text = Constants.TAB.searchPlaceHolder
+    selectorTextField.text = Constants.TAB.selectorPlaceHolder
+
+    searchTextField.foreground = Color.GRAY
+    selectorTextField.foreground = Color.GRAY
+
     generateLayout()
     addActions()
   }
@@ -63,6 +74,19 @@ class ExtractorResponseTabGUI(
     enterButton.addActionListener { enterHandler() }
     previousButton.addActionListener { search(false) }
     nextButton.addActionListener { search() }
+
+    removeTagsCheckBox.addActionListener { enterHandler() }
+    removeHeadCheckBox.addActionListener { enterHandler() }
+
+    selectorTextField.onFocusChange(
+      gained = {removePlaceHolder(selectorTextField, Constants.TAB.selectorPlaceHolder)},
+      lost = { addPlaceHolder(selectorTextField, Constants.TAB.selectorPlaceHolder) }
+    )
+
+    searchTextField.onFocusChange(
+      gained = { removePlaceHolder(searchTextField, Constants.TAB.searchPlaceHolder) },
+      lost = { addPlaceHolder(searchTextField, Constants.TAB.searchPlaceHolder) }
+    )
   }
 
   private fun generateLayout() {
@@ -72,7 +96,7 @@ class ExtractorResponseTabGUI(
     // Options
     val checksPanel = JPanel(MigLayout("insets 0"))
     checksPanel.add(removeTagsCheckBox)
-    checksPanel.add(removeJSCheckBox)
+    checksPanel.add(removeHeadCheckBox)
     checksPanel.add(convertJSONCheckBox)
 
     mainPanel.add(checksPanel, "span, growx, wrap")
@@ -106,8 +130,9 @@ class ExtractorResponseTabGUI(
   private fun enterHandler() {
     val selector = selectorTextField.text
     val removeTags = removeTagsCheckBox.isSelected
+    val removeHead = removeHeadCheckBox.isSelected
     Thread {
-      val result = parseHTML(selector, removeTags)
+      val result = parseHTML(selector, removeTags, removeHead)
       SwingUtilities.invokeLater {
         colourText.text = result
       }
@@ -116,13 +141,20 @@ class ExtractorResponseTabGUI(
 
   private fun parseHTML(
     selector: String,
-    removeTags: Boolean): String {
+    removeTags: Boolean,
+    removeHead: Boolean): String {
     if (originalBody == null) { return "" }
 
-    val document = Jsoup.parse(originalBody)
-    val elements = document.select(selector)
-
     val result = StringBuilder()
+    val sel = if (selector.isEmpty()) "*" else selector
+
+    val document = Jsoup.parse(originalBody)
+
+    var elements: Elements
+
+    if (removeHead) document.select("head").remove()
+
+    elements = document.select(sel)
 
     if (selector.equals("table", ignoreCase = true)) {
       val conversor = Table2Json()
@@ -149,6 +181,30 @@ class ExtractorResponseTabGUI(
 
   fun getMainPanel(): JPanel {
     return mainPanel
+  }
+
+  private fun removePlaceHolder(text: JTextField, holder: String) {
+    if (text.text.equals(holder)) text.text = ""
+    text.foreground = Color.WHITE
+  }
+
+  private fun addPlaceHolder(text: JTextField, holder: String) {
+    if (text.text.isEmpty() || text.text.equals(holder)) {
+      text.text = holder
+      text.foreground = Color.GRAY
+      return
+    }
+    text.foreground = Color.WHITE
+  }
+
+  fun JTextField.onFocusChange(
+    gained: () -> Unit = {},
+    lost: () -> Unit = {}
+  ) {
+    addFocusListener(object : FocusListener {
+      override fun focusGained(e: FocusEvent) = gained()
+      override fun focusLost(e: FocusEvent) = lost()
+    })
   }
 
 }
