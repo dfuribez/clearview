@@ -11,8 +11,7 @@ class Extension : BurpExtension, HttpResponseEditorProvider {
 
   override fun initialize(montoyaApi: MontoyaApi) {
     this.montoyaApi = montoyaApi
-    montoyaApi.extension().setName("My Extension")
-    montoyaApi.logging().logToOutput("Hi")
+    montoyaApi.extension().setName("Clear View")
 
     montoyaApi.userInterface().registerHttpResponseEditorProvider(this)
   }
