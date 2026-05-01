@@ -17,6 +17,12 @@ class Table2Json {
     var headers: List<String>? = null
     var values: List<String>? = null
 
+    val classes = table.classNames().joinToString(".")
+    val id = table.id()
+
+    val separator = if (id.isNotEmpty()) " - " else ""
+    val tableName = "${id}${separator}${classes}"
+
     val theaders = table.select("thead")
     val body = table.select("tbody")
 
@@ -37,12 +43,11 @@ class Table2Json {
     val v = mutableListOf<JsonObject>()
 
     for (tr in content) {
-      values = parseTr(tr)
-      v.add(generateJSONNode(headers, values))
+      v.add(generateJSONNode(headers, parseTr(tr)))
     }
 
     val json = buildJsonObject {
-      putJsonArray(name) {
+      putJsonArray(tableName) {
         for (a in v) add(a)
       }
     }
