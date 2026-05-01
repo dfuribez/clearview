@@ -29,6 +29,7 @@ class ExtractorResponseTabGUI(
   private val removeTagsCheckBox = JCheckBox("Remove Tags")
   private val removeHeadCheckBox = JCheckBox("Remove Head")
   private val convertJSONCheckBox = JCheckBox("Convert to JSON")
+  private val wrapCheckBox = JCheckBox("Wrap")
 
   private val enterButton = JButton("Search")
   private val previousButton = JButton("<")
@@ -56,12 +57,15 @@ class ExtractorResponseTabGUI(
     }
 
     colourText.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML)
+    colourText.lineWrap = true
 
     searchTextField.text = Constants.TAB.searchPlaceHolder
     selectorTextField.text = Constants.TAB.selectorPlaceHolder
 
     searchTextField.foreground = Color.GRAY
     selectorTextField.foreground = Color.GRAY
+
+    wrapCheckBox.isSelected = true
 
     generateLayout()
     addActions()
@@ -77,6 +81,8 @@ class ExtractorResponseTabGUI(
 
     removeTagsCheckBox.addActionListener { enterHandler() }
     removeHeadCheckBox.addActionListener { enterHandler() }
+
+    wrapCheckBox.addActionListener { colourText.lineWrap = wrapCheckBox.isSelected }
 
     selectorTextField.onFocusChange(
       gained = {removePlaceHolder(selectorTextField, Constants.TAB.selectorPlaceHolder)},
@@ -98,6 +104,7 @@ class ExtractorResponseTabGUI(
     checksPanel.add(removeTagsCheckBox)
     checksPanel.add(removeHeadCheckBox)
     checksPanel.add(convertJSONCheckBox)
+    checksPanel.add(wrapCheckBox)
 
     mainPanel.add(checksPanel, "span, growx, wrap")
     mainPanel.add(scrollHTML, "span, grow, push, wrap")
@@ -123,8 +130,7 @@ class ExtractorResponseTabGUI(
     context.searchFor = text
     context.searchForward = forward
 
-    val found = SearchEngine.find(colourText, context).wasFound()
-
+    SearchEngine.find(colourText, context).wasFound()
   }
 
   private fun enterHandler() {
@@ -148,13 +154,11 @@ class ExtractorResponseTabGUI(
     val result = StringBuilder()
     val sel = if (selector.isEmpty()) "*" else selector
 
-    val document = Jsoup.parse(originalBody)
-
-    var elements: Elements
+    val document = Jsoup.parse(originalBody!!)
 
     if (removeHead) document.select("head").remove()
 
-    elements = document.select(sel)
+    val elements = document.select(sel)
 
     if (selector.equals("table", ignoreCase = true)) {
       val conversor = Table2Json()
@@ -162,18 +166,18 @@ class ExtractorResponseTabGUI(
 
       for (table in elements) {
         result.append(conversor.table2JSON("table", table))
+        result.append(System.lineSeparator())
       }
-
       return result.toString()
     }
 
+    colourText.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML)
     for (li in elements) {
       if (removeTags) {
         result.append(li.text().trim())
       } else {
-        result.append(li.html().trim())
+        result.append(li.toString())
       }
-
       result.append(System.lineSeparator())
     }
     return result.toString()
@@ -206,6 +210,4 @@ class ExtractorResponseTabGUI(
       override fun focusLost(e: FocusEvent) = lost()
     })
   }
-
 }
-
