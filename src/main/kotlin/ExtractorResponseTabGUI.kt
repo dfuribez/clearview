@@ -14,6 +14,7 @@ import java.awt.Color
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.io.IOException
+import java.nio.charset.StandardCharsets
 import javax.swing.*
 
 
@@ -43,8 +44,6 @@ class ExtractorResponseTabGUI(
   private var response: HttpRequestResponse? = null
 
   init {
-    originalBody = response?.response()?.bodyToString()
-
     try {
       val theme: Theme = Theme.load(
         javaClass.getResourceAsStream(
@@ -72,7 +71,8 @@ class ExtractorResponseTabGUI(
   }
 
   fun modifiedResponse(response: HttpRequestResponse?) {
-    originalBody = response?.response()?.bodyToString()
+    val bodyBytes = response?.response()?.body()?.bytes ?: return
+    originalBody = String(bodyBytes, StandardCharsets.UTF_8)
     this.response = response
     enterHandler()
   }
