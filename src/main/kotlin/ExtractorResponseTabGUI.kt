@@ -10,7 +10,6 @@ import org.fife.ui.rtextarea.RTextScrollPane
 import org.fife.ui.rtextarea.SearchContext
 import org.fife.ui.rtextarea.SearchEngine
 import org.jsoup.Jsoup
-import org.jsoup.select.Elements
 import java.awt.Color
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
@@ -19,8 +18,8 @@ import javax.swing.*
 
 
 class ExtractorResponseTabGUI(
-  val montoyaApi: MontoyaApi,
-  val response: HttpRequestResponse?) {
+  val montoyaApi: MontoyaApi
+) {
   private val mainPanel = JPanel(MigLayout())
 
   private val selectorTextField = JTextField()
@@ -41,6 +40,7 @@ class ExtractorResponseTabGUI(
 
   private var originalBody: String? = null
 
+  private var response: HttpRequestResponse? = null
 
   init {
     originalBody = response?.response()?.bodyToString()
@@ -69,6 +69,12 @@ class ExtractorResponseTabGUI(
 
     generateLayout()
     addActions()
+  }
+
+  fun modifiedResponse(response: HttpRequestResponse?) {
+    originalBody = response?.response()?.bodyToString()
+    this.response = response
+    enterHandler()
   }
 
   private fun addActions() {
@@ -141,6 +147,7 @@ class ExtractorResponseTabGUI(
       val result = parseHTML(selector, removeTags, removeHead)
       SwingUtilities.invokeLater {
         colourText.text = result
+        colourText.caretPosition = 0
       }
     }.start()
   }

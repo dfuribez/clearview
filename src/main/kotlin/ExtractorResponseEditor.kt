@@ -14,6 +14,7 @@ class ExtractorResponseEditor(
   var editorCreationContext: EditorCreationContext
 ) : ExtensionProvidedHttpResponseEditor {
 
+  private val tabGui = ExtractorResponseTabGUI(montoyaApi)
   private var currentResponse: HttpRequestResponse? = null
 
   override fun getResponse(): HttpResponse? {
@@ -21,12 +22,15 @@ class ExtractorResponseEditor(
   }
 
   override fun setRequestResponse(requestResponse: HttpRequestResponse) {
+    tabGui.modifiedResponse(requestResponse)
     currentResponse = requestResponse
   }
 
   override fun isEnabledFor(requestResponse: HttpRequestResponse?): Boolean {
     if (requestResponse == null) { return false }
-    return requestResponse.response().inferredMimeType().equals(MimeType.HTML)
+
+    return true
+    //return requestResponse.response().inferredMimeType().equals(MimeType.HTML)
   }
 
   override fun caption(): String {
@@ -34,7 +38,6 @@ class ExtractorResponseEditor(
   }
 
   override fun uiComponent(): Component {
-    val tabGui = ExtractorResponseTabGUI(montoyaApi, currentResponse)
     return tabGui.getMainPanel()
   }
 
