@@ -74,7 +74,15 @@ class ExtractorResponseTabGUI(
     val bodyBytes = response?.response()?.body()?.bytes ?: return
     originalBody = String(bodyBytes, StandardCharsets.UTF_8)
     this.response = response
+
     enterHandler()
+    SwingUtilities.invokeLater {
+      SwingUtilities.invokeLater {
+        colourText.caretPosition = 0
+        colourText.requestFocusInWindow()
+        search()
+      }
+    }
   }
 
   private fun addActions() {
@@ -129,12 +137,17 @@ class ExtractorResponseTabGUI(
 
   private fun search(forward: Boolean = true) {
     val text = searchTextField.text
-
     if (text.isEmpty()) return
 
     val context = SearchContext()
     context.searchFor = text
+    context.matchCase = false
+    context.isRegularExpression = false
     context.searchForward = forward
+    context.searchWrap = true
+
+    val caret = colourText.caretPosition
+    if (caret < colourText.document.length) colourText.caretPosition = caret + 1
 
     SearchEngine.find(colourText, context).wasFound()
   }
@@ -143,13 +156,9 @@ class ExtractorResponseTabGUI(
     val selector = selectorTextField.text
     val removeTags = removeTagsCheckBox.isSelected
     val removeHead = removeHeadCheckBox.isSelected
-    Thread {
-      val result = parseHTML(selector, removeTags, removeHead)
-      SwingUtilities.invokeLater {
-        colourText.text = result
-        colourText.caretPosition = 0
-      }
-    }.start()
+    val result = parseHTML(selector, removeTags, removeHead)
+    colourText.text = result
+    colourText.caretPosition = 0
   }
 
   private fun parseHTML(
