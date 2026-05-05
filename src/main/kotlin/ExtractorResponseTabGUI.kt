@@ -181,20 +181,34 @@ class ExtractorResponseTabGUI(
   }
 
   private fun search(forward: Boolean = true) {
-    val text = searchTextField.text
-    if (text.isEmpty()) return
+    progressBar.isIndeterminate = true
+    progressBar.isVisible = true
+    object : SwingWorker<Boolean, Unit>() {
+      override fun doInBackground(): Boolean {
+        val text = searchTextField.text
+        if (text.isEmpty()) return true
 
-    val context = SearchContext()
-    context.searchFor = text
-    context.matchCase = false
-    context.isRegularExpression = false
-    context.searchForward = forward
-    context.searchWrap = true
+        val context = SearchContext()
+        context.searchFor = text
+        context.matchCase = false
+        context.isRegularExpression = false
+        context.searchForward = forward
+        context.searchWrap = true
 
-    val caret = colourText.caretPosition
-    if (caret < colourText.document.length) colourText.caretPosition = caret + 1
+        val caret = colourText.caretPosition
+        if (caret < colourText.document.length) colourText.caretPosition = caret + 1
 
-    SearchEngine.find(colourText, context).wasFound()
+        SearchEngine.find(colourText, context).wasFound()
+        return true
+      }
+
+      override fun done() {
+        val result = get()
+        progressBar.isIndeterminate = false
+        progressBar.isVisible = false
+      }
+    }.execute()
+
   }
 
   private fun enterHandler() {
