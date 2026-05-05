@@ -3,7 +3,6 @@ package com.example
 import burp.api.montoya.MontoyaApi
 import burp.api.montoya.http.message.HttpRequestResponse
 import com.example.customui.CollapsiblePanel
-import jdk.jshell.execution.Util
 import net.miginfocom.swing.MigLayout
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants
@@ -106,6 +105,9 @@ class ExtractorResponseTabGUI(
     removeHeadCheckBox.addActionListener { enterHandler() }
     removeSelectorText.addActionListener { enterHandler() }
     removeSelectorButton.addActionListener { enterHandler() }
+    replaceText.addActionListener { enterHandler() }
+    withText.addActionListener { enterHandler() }
+    replaceButton.addActionListener { enterHandler() }
 
     wrapCheckBox.addActionListener { colourText.lineWrap = wrapCheckBox.isSelected }
 
@@ -143,7 +145,7 @@ class ExtractorResponseTabGUI(
     panel.add(withText, "growx, pushx")
     panel.add(replaceButton)
 
-    val collapsible = CollapsiblePanel("More", panel, checksPanel)
+    val collapsible = CollapsiblePanel("", panel, checksPanel)
 
     mainPanel.add(collapsible, "span, growx, wrap")
 
@@ -187,32 +189,56 @@ class ExtractorResponseTabGUI(
     if (selector == "<selector>") { working = false; return }
 
     val head = if (removeHeadCheckBox.isSelected) ",head" else ""
-    val toRemove = removeSelectorText.text + head
+    var toRemove = removeSelectorText.text.trim() + head
 
+    if (toRemove.startsWith(",head")) toRemove = "head"
     val p = montoyaApi.userInterface().swingUtils().suiteFrame()
-
-    if (!checkSelector(selector) || !checkSelector(toRemove)) {
-      showMessage(p, "Invalid CSS selector")
+    if (!checkSelector(selector) || (!checkSelector(toRemove) && toRemove.isNotBlank())) {
+      showMessage(p, "Invalid CSS selector $selector or $toRemove")
       working = false
       return
     }
+    val replace = replaceText.text
+    val replaceWithText = withText.text
 
     try {
-      val result = parseHTML(selector, removeTags, toRemove)
+      val result = parseHtml(selector, removeTags, toRemove)
       colourText.text = result
-      colourText.caretPosition = 0
+
+      if (replace.isNotEmpty()) {
+        colourText.caretPosition = 0
+
+        if (!isValidRegex(replace)) {
+          working = false
+          showMessage(p, "Invalid regex: $replace")
+          return
+        }
+
+        val context = SearchContext().apply {
+          searchFor = replace
+          replaceWith = replaceWithText
+          matchCase = false
+          isRegularExpression = true
+          searchForward = true
+        }
+
+        SearchEngine.replaceAll(colourText, context)
+      }
+
     } catch (e : Exception) {
       montoyaApi.logging().logToError(e.toString())
       working = false
     }
 
+    colourText.caretPosition = 0
     working = false
   }
 
-  private fun parseHTML(
+  private fun parseHtml(
     selector: String,
     removeTags: Boolean,
-    toRemove: String): String {
+    toRemove: String
+  ): String {
     if (originalBody == null) { return "" }
 
     val result = StringBuilder()
