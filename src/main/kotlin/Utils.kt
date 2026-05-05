@@ -26,3 +26,19 @@ fun isValidRegex(pattern: String) : Boolean{
     return false
   }
 }
+
+fun manualWrap(s: String, limit: Int): String {
+  val sb = StringBuilder()
+
+  for (line in s.split(System.lineSeparator())) {
+    var i = 0
+    while (i < line.length) {
+      val end = minOf(i + limit, line.length)
+      sb.append(line.substring(i, end))
+      sb.append(System.lineSeparator())
+      i += limit
+    }
+  }
+
+  return sb.toString()
+}
