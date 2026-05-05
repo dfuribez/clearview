@@ -17,3 +17,12 @@ fun checkSelector(selector: String) : Boolean {
 fun showMessage(parent: Component, message: String) {
     JOptionPane.showMessageDialog(parent, message)
 }
+
+fun isValidRegex(pattern: String) : Boolean{
+  try {
+    Regex(pattern)
+    return true
+  } catch (e: Exception) {
+    return false
+  }
+}
