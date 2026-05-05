@@ -1,7 +1,19 @@
 package com.example
 
-class Utils {
-  companion object {
-    fun parseHTML() {}
+import org.jsoup.select.QueryParser
+import java.awt.Component
+import javax.swing.JDialog
+import javax.swing.JOptionPane
+
+fun checkSelector(selector: String) : Boolean {
+  try {
+    QueryParser.parse(selector)
+    return true
+  } catch (e: Exception) {
+    return false
   }
+}
+
+fun showMessage(parent: Component, message: String) {
+    JOptionPane.showMessageDialog(parent, message)
 }
