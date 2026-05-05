@@ -43,6 +43,8 @@ class ExtractorResponseTabGUI(
   private val removeSelectorButton = JButton("Remove")
   private val replaceButton = JButton("Replace")
 
+  private val progressBar = JProgressBar()
+
   private val colourText = RSyntaxTextArea(20, 20)
 
   private val scrollHtml = RTextScrollPane(colourText)
@@ -137,6 +139,7 @@ class ExtractorResponseTabGUI(
   }
 
   private fun generateLayout() {
+    mainPanel.add(progressBar, "north, height 2!, wrap")
     mainPanel.add(selectorTextField, "growx, pushx")
     mainPanel.add(enterButton, "wrap")
 
@@ -195,6 +198,8 @@ class ExtractorResponseTabGUI(
   }
 
   private fun enterHandler() {
+    progressBar.isIndeterminate = true
+    progressBar.isVisible = true
     object : SwingWorker<String, Unit>() {
       override fun doInBackground(): String? {
         return process()
@@ -204,11 +209,14 @@ class ExtractorResponseTabGUI(
         val result = get()
         colourText.text = result
         colourText.caretPosition = 0
+        progressBar.isIndeterminate = false
+        progressBar.isVisible = false
       }
     }.execute()
   }
 
   private fun process() : String? {
+
     val selector = selectorTextField.text
     val removeTags = removeTagsCheckBox.isSelected
 
@@ -241,7 +249,6 @@ class ExtractorResponseTabGUI(
       }
 
       if (wrapCheckBox.isSelected) result = wrap(result)
-
       return result
     } catch (e : Exception) {
       montoyaApi.logging().logToError(e.toString())
