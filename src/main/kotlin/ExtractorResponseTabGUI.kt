@@ -181,12 +181,24 @@ class ExtractorResponseTabGUI(
   }
 
   private fun enterHandler() {
-    if (working)  return
-    working = true
+    object : SwingWorker<String, Unit>() {
+      override fun doInBackground(): String? {
+        return process()
+      }
+
+      override fun done() {
+        val result = get()
+        colourText.text = result
+        colourText.caretPosition = 0
+      }
+    }.execute()
+  }
+
+  private fun process() : String? {
     val selector = selectorTextField.text
     val removeTags = removeTagsCheckBox.isSelected
 
-    if (selector == "<selector>") { working = false; return }
+    if (selector == "<selector>") { working = false; return null}
 
     val head = if (removeHeadCheckBox.isSelected) ",head" else ""
     var toRemove = removeSelectorText.text.trim() + head
@@ -195,43 +207,31 @@ class ExtractorResponseTabGUI(
     val p = montoyaApi.userInterface().swingUtils().suiteFrame()
     if (!checkSelector(selector) || (!checkSelector(toRemove) && toRemove.isNotBlank())) {
       showMessage(p, "Invalid CSS selector $selector or $toRemove")
-      working = false
-      return
+      return null
     }
     val replace = replaceText.text
     val replaceWithText = withText.text
 
     try {
-      val result = parseHtml(selector, removeTags, toRemove)
+      var result = parseHtml(selector, removeTags, toRemove)
       colourText.text = result
 
       if (replace.isNotEmpty()) {
         colourText.caretPosition = 0
 
         if (!isValidRegex(replace)) {
-          working = false
           showMessage(p, "Invalid regex: $replace")
-          return
+          return null
         }
 
-        val context = SearchContext().apply {
-          searchFor = replace
-          replaceWith = replaceWithText
-          matchCase = false
-          isRegularExpression = true
-          searchForward = true
-        }
-
-        SearchEngine.replaceAll(colourText, context)
+        result = result.replace(Regex(replace), replaceWithText)
+        return  result
       }
-
+      return result
     } catch (e : Exception) {
       montoyaApi.logging().logToError(e.toString())
-      working = false
+      return null
     }
-
-    colourText.caretPosition = 0
-    working = false
   }
 
   private fun parseHtml(
