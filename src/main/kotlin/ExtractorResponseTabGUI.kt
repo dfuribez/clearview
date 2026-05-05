@@ -3,6 +3,7 @@ package com.example
 import burp.api.montoya.MontoyaApi
 import burp.api.montoya.http.message.HttpRequestResponse
 import com.example.customui.CollapsiblePanel
+import jdk.jshell.execution.Util
 import net.miginfocom.swing.MigLayout
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants
@@ -48,6 +49,8 @@ class ExtractorResponseTabGUI(
   private var originalBody: String? = null
 
   private var response: HttpRequestResponse? = null
+
+  private var working: Boolean = false
 
   init {
     try {
@@ -101,6 +104,8 @@ class ExtractorResponseTabGUI(
 
     removeTagsCheckBox.addActionListener { enterHandler() }
     removeHeadCheckBox.addActionListener { enterHandler() }
+    removeSelectorText.addActionListener { enterHandler() }
+    removeSelectorButton.addActionListener { enterHandler() }
 
     wrapCheckBox.addActionListener { colourText.lineWrap = wrapCheckBox.isSelected }
 
@@ -174,18 +179,40 @@ class ExtractorResponseTabGUI(
   }
 
   private fun enterHandler() {
+    if (working)  return
+    working = true
     val selector = selectorTextField.text
     val removeTags = removeTagsCheckBox.isSelected
-    val removeHead = removeHeadCheckBox.isSelected
-    val result = parseHTML(selector, removeTags, removeHead)
-    colourText.text = result
-    colourText.caretPosition = 0
+
+    if (selector == "<selector>") { working = false; return }
+
+    val head = if (removeHeadCheckBox.isSelected) ",head" else ""
+    val toRemove = removeSelectorText.text + head
+
+    val p = montoyaApi.userInterface().swingUtils().suiteFrame()
+
+    if (!checkSelector(selector) || !checkSelector(toRemove)) {
+      showMessage(p, "Invalid CSS selector")
+      working = false
+      return
+    }
+
+    try {
+      val result = parseHTML(selector, removeTags, toRemove)
+      colourText.text = result
+      colourText.caretPosition = 0
+    } catch (e : Exception) {
+      montoyaApi.logging().logToError(e.toString())
+      working = false
+    }
+
+    working = false
   }
 
   private fun parseHTML(
     selector: String,
     removeTags: Boolean,
-    removeHead: Boolean): String {
+    toRemove: String): String {
     if (originalBody == null) { return "" }
 
     val result = StringBuilder()
@@ -193,7 +220,7 @@ class ExtractorResponseTabGUI(
 
     val document = Jsoup.parse(originalBody!!)
 
-    if (removeHead) document.select("head").remove()
+    if (toRemove.isNotEmpty()) document.select(toRemove).remove()
 
     val elements = document.select(sel)
 
