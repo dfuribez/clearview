@@ -12,6 +12,8 @@ import org.fife.ui.rtextarea.SearchContext
 import org.fife.ui.rtextarea.SearchEngine
 import org.jsoup.Jsoup
 import java.awt.Color
+import java.awt.Font
+import java.awt.FontMetrics
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.io.IOException
@@ -43,7 +45,7 @@ class ExtractorResponseTabGUI(
 
   private val colourText = RSyntaxTextArea(20, 20)
 
-  private val scrollHTML = RTextScrollPane(colourText)
+  private val scrollHtml = RTextScrollPane(colourText)
 
   private var originalBody: String? = null
 
@@ -63,8 +65,11 @@ class ExtractorResponseTabGUI(
       ioe.printStackTrace()
     }
 
+    scrollHtml.lineNumbersEnabled = false
+
+    colourText.setFont(Font("Monospaced", Font.PLAIN, 12));
+    colourText.lineWrap = false
     colourText.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_HTML)
-    colourText.lineWrap = true
 
     searchTextField.text = Constants.TAB.searchPlaceHolder
     selectorTextField.text = Constants.TAB.selectorPlaceHolder
@@ -76,6 +81,15 @@ class ExtractorResponseTabGUI(
 
     generateLayout()
     addActions()
+  }
+
+  fun wrap(s: String): String {
+    val width = scrollHtml.width
+    val fm: FontMetrics = colourText.getFontMetrics(colourText.getFont())
+    val charWidth = fm.charWidth('m')
+    val maxCharsPerLine: Int = width / charWidth
+
+    return manualWrap(s, maxCharsPerLine - 3)
   }
 
   fun modifiedResponse(response: HttpRequestResponse?) {
@@ -109,7 +123,7 @@ class ExtractorResponseTabGUI(
     withText.addActionListener { enterHandler() }
     replaceButton.addActionListener { enterHandler() }
 
-    wrapCheckBox.addActionListener { colourText.lineWrap = wrapCheckBox.isSelected }
+    wrapCheckBox.addActionListener { enterHandler() }
 
     selectorTextField.onFocusChange(
       gained = {removePlaceHolder(selectorTextField, Constants.TAB.selectorPlaceHolder)},
@@ -149,7 +163,7 @@ class ExtractorResponseTabGUI(
 
     mainPanel.add(collapsible, "span, growx, wrap")
 
-    mainPanel.add(scrollHTML, "span, grow, push, wrap")
+    mainPanel.add(scrollHtml, "span, grow, push, wrap")
 
     // Search
     val searchPanel = JPanel(MigLayout("insets 0"))
@@ -214,7 +228,6 @@ class ExtractorResponseTabGUI(
 
     try {
       var result = parseHtml(selector, removeTags, toRemove)
-      colourText.text = result
 
       if (replace.isNotEmpty()) {
         colourText.caretPosition = 0
@@ -225,8 +238,10 @@ class ExtractorResponseTabGUI(
         }
 
         result = result.replace(Regex(replace), replaceWithText)
-        return  result
       }
+
+      if (wrapCheckBox.isSelected) result = wrap(result)
+
       return result
     } catch (e : Exception) {
       montoyaApi.logging().logToError(e.toString())

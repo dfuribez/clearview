@@ -64,7 +64,7 @@ class Table2Json {
       for ((index, value) in values.withIndex()) {
         var header: String = ""
         if (headers == null || index >= headers.size) {
-          header = "element ${index}"
+          header = "element $index"
         } else {
           header = headers[index]
         }
