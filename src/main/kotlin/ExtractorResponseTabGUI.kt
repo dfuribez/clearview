@@ -2,6 +2,7 @@ package com.example
 
 import burp.api.montoya.MontoyaApi
 import burp.api.montoya.http.message.HttpRequestResponse
+import com.example.customui.CollapsiblePanel
 import net.miginfocom.swing.MigLayout
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants
@@ -26,14 +27,19 @@ class ExtractorResponseTabGUI(
   private val selectorTextField = JTextField()
   private val searchTextField = JTextField()
 
+  private val removeSelectorText = JTextField()
+  private val replaceText = JTextField()
+  private val withText = JTextField()
+
   private val removeTagsCheckBox = JCheckBox("Remove Tags")
   private val removeHeadCheckBox = JCheckBox("Remove Head")
-  private val convertJSONCheckBox = JCheckBox("Convert to JSON")
   private val wrapCheckBox = JCheckBox("Wrap")
 
   private val enterButton = JButton("Search")
   private val previousButton = JButton("<")
   private val nextButton = JButton(">")
+  private val removeSelectorButton = JButton("Remove")
+  private val replaceButton = JButton("Replace")
 
   private val colourText = RSyntaxTextArea(20, 20)
 
@@ -117,10 +123,25 @@ class ExtractorResponseTabGUI(
     val checksPanel = JPanel(MigLayout("insets 0"))
     checksPanel.add(removeTagsCheckBox)
     checksPanel.add(removeHeadCheckBox)
-    checksPanel.add(convertJSONCheckBox)
     checksPanel.add(wrapCheckBox)
 
-    mainPanel.add(checksPanel, "span, growx, wrap")
+    // Cillapsable
+    val panel = JPanel(MigLayout("insets 0"))
+
+    panel.add(JLabel("Remove:"))
+    panel.add(removeSelectorText, "growx, pushx, span 3")
+    panel.add(removeSelectorButton, "wrap")
+
+    panel.add(JLabel("Replace:"))
+    panel.add(replaceText, "growx, pushx")
+    panel.add(JLabel("With:"))
+    panel.add(withText, "growx, pushx")
+    panel.add(replaceButton)
+
+    val collapsible = CollapsiblePanel("More", panel, checksPanel)
+
+    mainPanel.add(collapsible, "span, growx, wrap")
+
     mainPanel.add(scrollHTML, "span, grow, push, wrap")
 
     // Search
